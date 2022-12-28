@@ -44,36 +44,19 @@ fn print_rucksack(items: &Vec<char>, mid: &usize) {
     println!();
 }
 
-fn main() {
-    env::set_var("RUST_BACKTRACE", "1");
-
-    let file = File::open("input.txt").expect("input not found");
-    let reader = BufReader::new(file);
-
-    let mut i = 0;
-
+fn part_1(reader: BufReader<File>) {
     let mut sum: u32 = 0;
 
-    let mut odd_count = 0;
-
+    // For each rucksack
     for line in reader.lines() {
-        let mut chars: Vec<char> = line.unwrap().chars().collect();
-        let mid = chars.len() / 2;
+        let mut item_types: Vec<char> = line.unwrap().chars().collect();
+        let mid = item_types.len() / 2;
 
-        if mid % 2 != 0 {
-            odd_count += 1;
-        }
+        // Sort second compartment for binary search
+        item_types[mid..].sort_by(|a, b| priority(a).cmp(&priority(b)));
 
-        chars[mid..].sort_by(|a, b| priority(a).cmp(&priority(b)));
-        // chars[mid..].sort();
-
-        let first_compartment = &chars[..mid];
-        let second_compartment = &chars[mid..];
-
-        if i < 2 {
-            println!("{:?} \n {} \n", chars, chars[mid]);
-            i += 1;
-        }
+        let first_compartment = &item_types[..mid];
+        let second_compartment = &item_types[mid..];
 
         for (i, item_type) in first_compartment.iter().enumerate() {
             if b_search(
@@ -82,7 +65,7 @@ fn main() {
                 0,
                 (second_compartment.len() - 1).try_into().unwrap(),
             ) {
-                print_rucksack(&chars, &mid);
+                // print_rucksack(&item_types, &mid);
                 // println!(
                 //     "{} Term: {} Priority: {}",
                 //     i,
@@ -94,6 +77,14 @@ fn main() {
             }
         }
     }
-    println!("Odd: {}", odd_count);
-    println!("{}", sum);
+    println!("Part 1: {}", sum);
+}
+
+fn main() {
+    env::set_var("RUST_BACKTRACE", "1");
+
+    let file = File::open("input.txt").expect("input not found");
+    let reader = BufReader::new(file);
+
+    part_1(reader)
 }
