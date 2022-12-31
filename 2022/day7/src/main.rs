@@ -81,72 +81,96 @@ use std::{
 //     }
 // }
 
-fn build_tree(lines: &Vec<String>, tree: &Tree) {
-    let mut line_index = 1;
+fn sum_less_than(path_to_size: &HashMap<String, usize>) -> usize {
+    let mut sum: usize = 0;
 
-    let mut current = tree.root.clone();
+    for size in path_to_size.values() {
+        if *size <= 100_000 {
+            sum += size;
+        }
+    }
 
-    while line_index < lines.len() {
-        println!("Line: {}", line_index + 1);
-        let split: Vec<&str> = lines[line_index].split(" ").collect();
+    return sum;
+}
+
+fn path_to_string(path: &[&str]) -> String {
+    let mut path_string: String = String::new();
+
+    if path.len() == 1 {
+        path_string.push('/');
+        return path_string;
+    }
+
+    for (i, string) in path.iter().enumerate() {
+        if i == 1 {
+            path_string.push_str(&string);
+        } else {
+            path_string.push('/');
+            path_string.push_str(&string);
+        }
+    }
+    return path_string;
+}
+
+fn part_1(lines: &Vec<String>) {
+    let mut path: Vec<&str> = Vec::new();
+    let mut path_to_size: HashMap<String, usize> = HashMap::new();
+
+    for line in lines.iter() {
+        println!("Line: {}", line);
+        println!("Path: {:?}", path);
+        let split: Vec<&str> = line.split(" ").collect();
         match split[0] {
             // A command
             "$" => match split[1] {
                 "cd" => {
-                    let name = split[2];
-                    println!("Command 'cd'; Current: {:?}", current);
-                    match current.clone().next(name.to_string()) {
-                        Some(next) => {
-                            current = next;
+                    match split[2] {
+                        "/" => {
+                            // add root
+                            path.push("/");
+                            path_to_size.insert("/".to_string(), 0);
                         }
-                        None => {
-                            println!("Unable to enter directory {}.", name);
+                        ".." => {
+                            // move back in path
+                            path.pop();
+                        }
+                        _ => {
+                            println!("{}", line);
+                            // add into stack
+                            let name = split[2];
+                            path.push(name);
+                            path_to_size.insert(path_to_string(&path), 0);
                         }
                     }
                 }
-                "ls" => {}
+                "ls" => {
+                    continue;
+                }
                 _ => {
                     // if there is an unknown command
                     println!("Unable to read command '{}'", split[1]);
                 }
             },
             "dir" => {
-                // add the directory to current directory
-                let name = split[1].to_string();
-                current.clone().add(Box::new(Node::new(name, 0, None)));
+                continue;
             }
             _ => {
-                // add the file to the current directory
+                // add the file size to all directories in stack
                 let size: usize = split[0].parse().unwrap();
-                let name = split[1].to_string();
 
-                current.clone().add(Box::new(Node::new(name, size, None)));
+                for i in (1..path.len() + 1).rev() {
+                    // println!("I: {}", i);
+                    // println!("{}", path_to_string(&path[..i]));
+                    path_to_size.insert(
+                        path_to_string(&path[..i]),
+                        path_to_size[&path_to_string(&path[..i])] + size,
+                    );
+                }
             }
         }
-
-        line_index += 1;
     }
-}
 
-fn part_1(lines: &Vec<String>) {
-    let mut tree = Tree::new(Node::new("root".to_string(), 0, None));
-
-    let current = &mut tree.root;
-
-    let test_node = Box::new(Node::new("test".to_string(), 0, None));
-
-    current.add(test_node);
-
-    // current.add(Box::new(Node::new("test".to_string(), 0, None)));
-    // current.add(Box::new(Node::new("test".to_string(), 0, None)));
-
-    println!("Tree: {:?}", tree);
-    // println!("Current: {:?}", current.children);
-
-    build_tree(lines, &tree);
-
-    println!("Tree Built");
-    println!("Part 1: {}", tree.sum_size(tree.root.clone()));
+    println!("Part 1: {}", sum_less_than(&path_to_size));
 }
 
 fn part_2(lines: &Vec<String>) {}
