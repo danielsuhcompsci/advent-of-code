@@ -4,93 +4,149 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-struct Node {
-    name: String,
-    size: usize,
-    children: Option<Box<Vec<Node>>>,
-}
+// #[derive(Debug, Clone)]
+// struct Node {
+//     name: String,
+//     size: usize,
+//     children: Option<Vec<Box<Node>>>,
+// }
 
-impl Node {
-    pub fn new(name: String, size: usize, children: Vec<Node>) -> Self {
-        Node {
-            name,
-            size,
-            children: Some(Box::new(children)),
-        }
-    }
+// impl Node {
+//     pub fn new(name: String, size: usize, children: Option<Vec<Box<Node>>>) -> Self {
+//         match children {
+//             Some(children) => Node {
+//                 name,
+//                 size,
+//                 children: Some(children),
+//             },
+//             None => Node {
+//                 name,
+//                 size,
+//                 children: None,
+//             },
+//         }
+//     }
 
-    pub fn add(mut self, child: Node) {
-        match self.children {
-            Some(mut children) => {
-                children.push(child);
-            }
-            None => {
-                let children: Vec<Node> = vec![child];
-                self.children = Some(Box::new(children));
-            }
-        }
-    }
-}
+//     pub fn add(mut self, child: Box<Node>) {
+//         match self.children {
+//             Some(mut children) => {
+//                 children.push(child);
+//             }
+//             None => {
+//                 let children: Vec<Box<Node>> = vec![child];
+//                 self.children = Some(children);
+//             }
+//         }
+//     }
 
-struct Tree {
-    root: Box<Node>,
-}
+//     pub fn next(self, name: String) -> Option<Box<Node>> {
+//         for child in self.children.unwrap() {
+//             if child.name == name {
+//                 return Some(child);
+//             }
+//         }
 
-impl Tree {
-    pub fn new(root: Node) -> Self {
-        Tree {
-            root: Box::new(root),
-        }
-    }
+//         return None;
+//     }
+// }
 
-    pub fn sum_less_than(bound: usize) {}
-}
+// #[derive(Debug, Clone)]
+// struct Tree {
+//     pub root: Box<Node>,
+//     pub sum: usize,
+// }
 
-fn part_1(lines: &Vec<String>) {
-    // let root_children: Vec<Node> = Vec::new();
-    // let tree = Tree::new(Node::new("root".to_string(), 0, root_children));
+// impl Tree {
+//     pub fn new(root: Node) -> Self {
+//         Tree {
+//             root: Box::new(root),
+//             sum: 0,
+//         }
+//     }
 
-    // Holds the map of directory to size
-    let mut directory_to_size: HashMap<String, usize> = HashMap::new();
+//     pub fn sum_size(&mut self, current: Box<Node>) -> usize {
+//         match current.children {
+//             Some(children) => {
+//                 let mut size: usize = 0;
+//                 for child in children {
+//                     size += Self::sum_size(self, child);
+//                 }
+//                 if size <= 100000 {
+//                     self.sum += size;
+//                 }
+//                 size
+//             }
+//             None => current.size,
+//         }
+//     }
+// }
 
-    // The current directory at the top of the stack
-    let mut directory_stack: Vec<String> = Vec::new();
-
+fn build_tree(lines: &Vec<String>, tree: &Tree) {
     let mut line_index = 1;
 
+    let mut current = tree.root.clone();
+
     while line_index < lines.len() {
+        println!("Line: {}", line_index + 1);
         let split: Vec<&str> = lines[line_index].split(" ").collect();
         match split[0] {
+            // A command
             "$" => match split[1] {
-                // A command
                 "cd" => {
-                    // push it onto the stack to make it the current directory
-                    directory_stack.push(split[2].to_string());
+                    let name = split[2];
+                    println!("Command 'cd'; Current: {:?}", current);
+                    match current.clone().next(name.to_string()) {
+                        Some(next) => {
+                            current = next;
+                        }
+                        None => {
+                            println!("Unable to enter directory {}.", name);
+                        }
+                    }
                 }
-                "ls" => {
-                    // no action required
-                    continue;
-                }
+                "ls" => {}
                 _ => {
                     // if there is an unknown command
                     println!("Unable to read command '{}'", split[1]);
                 }
             },
             "dir" => {
-                // add the directory to the map
-                directory_to_size.insert(split[1].to_string(), 0);
+                // add the directory to current directory
+                let name = split[1].to_string();
+                current.clone().add(Box::new(Node::new(name, 0, None)));
             }
             _ => {
-                // add the size of the file to the current directory
+                // add the file to the current directory
                 let size: usize = split[0].parse().unwrap();
-                let current_directory = directory_stack.last().unwrap();
-                directory_to_size.insert(
-                    (*current_directory).clone(),
-                    directory_to_size[current_directory] + size,
-                );
+                let name = split[1].to_string();
+
+                current.clone().add(Box::new(Node::new(name, size, None)));
             }
         }
+
+        line_index += 1;
     }
+}
+
+fn part_1(lines: &Vec<String>) {
+    let mut tree = Tree::new(Node::new("root".to_string(), 0, None));
+
+    let current = &mut tree.root;
+
+    let test_node = Box::new(Node::new("test".to_string(), 0, None));
+
+    current.add(test_node);
+
+    // current.add(Box::new(Node::new("test".to_string(), 0, None)));
+    // current.add(Box::new(Node::new("test".to_string(), 0, None)));
+
+    println!("Tree: {:?}", tree);
+    // println!("Current: {:?}", current.children);
+
+    build_tree(lines, &tree);
+
+    println!("Tree Built");
+    println!("Part 1: {}", tree.sum_size(tree.root.clone()));
 }
 
 fn part_2(lines: &Vec<String>) {}
