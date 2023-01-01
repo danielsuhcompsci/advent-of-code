@@ -2,6 +2,7 @@ use std::{
     collections::{HashMap, HashSet},
     fs::File,
     io::{BufRead, BufReader},
+    path,
 };
 
 // #[derive(Debug, Clone)]
@@ -112,13 +113,10 @@ fn path_to_string(path: &[&str]) -> String {
     return path_string;
 }
 
-fn part_1(lines: &Vec<String>) {
+fn part_1(lines: &Vec<String>, path_to_size: &mut HashMap<String, usize>) {
     let mut path: Vec<&str> = Vec::new();
-    let mut path_to_size: HashMap<String, usize> = HashMap::new();
 
     for line in lines.iter() {
-        println!("Line: {}", line);
-        println!("Path: {:?}", path);
         let split: Vec<&str> = line.split(" ").collect();
         match split[0] {
             // A command
@@ -135,7 +133,6 @@ fn part_1(lines: &Vec<String>) {
                             path.pop();
                         }
                         _ => {
-                            println!("{}", line);
                             // add into stack
                             let name = split[2];
                             path.push(name);
@@ -173,7 +170,18 @@ fn part_1(lines: &Vec<String>) {
     println!("Part 1: {}", sum_less_than(&path_to_size));
 }
 
-fn part_2(lines: &Vec<String>) {}
+fn part_2(path_to_size: &HashMap<String, usize>) {
+    let minimum_delete_threshold = 30000000 - (70000000 - path_to_size["/"]);
+    let mut current_candidate: usize = path_to_size["/"];
+
+    for size in path_to_size.values() {
+        if *size >= minimum_delete_threshold && *size < current_candidate {
+            current_candidate = *size;
+        }
+    }
+
+    println!("Part 2: {}", current_candidate);
+}
 
 fn main() {
     let file = File::open("input.txt").expect("unable to open input file");
@@ -181,6 +189,8 @@ fn main() {
 
     let lines: Vec<String> = reader.lines().into_iter().map(|r| r.unwrap()).collect();
 
-    part_1(&lines);
-    part_2(&lines);
+    let mut path_to_size: HashMap<String, usize> = HashMap::new();
+
+    part_1(&lines, &mut path_to_size);
+    part_2(&path_to_size);
 }
